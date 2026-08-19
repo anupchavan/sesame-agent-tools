@@ -1,0 +1,15 @@
+You are reading the static example endpoint of sesame-agent-tools.
+
+This file is served by GitHub Pages. A static host can't read the query params or check the
+rotating key, so use this path only for FIXED context you want your agents to read — a
+knowledge base, a personal "system prompt", reference data, etc. Edit this file to whatever
+you want your agents to know.
+
+For real tools that run logic per request (list files, query a database, check live data),
+deploy worker/worker.js (Cloudflare Workers) or server/tree_server.py and point the app at
+that URL instead.
+
+Example fixed context:
+- Owner: replace with your name.
+- Projects: replace with your project list.
+- Preferences: replace with anything you'd want the agent to remember.

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>sesame-agent-tools</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #0f0f0f; --muted: #6b7280; --line: #e6e6e6;
+    --card: #f5f5f5; --accent: #6a8695; --code: #f2f2f2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1c1c1c; --fg: #d6d6d6; --muted: #9a9a9a; --line: #333;
+            --card: #242424; --accent: #8aa2ae; --code: #262626; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 64px 22px 96px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .tag { color: var(--muted); margin: 0 0 36px; }
+  h2 { font-size: 18px; margin: 40px 0 12px; }
+  p, li { color: var(--fg); }
+  a { color: var(--accent); }
+  code { background: var(--code); padding: 2px 6px; border-radius: 5px;
+    font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  .flow { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; color: var(--muted); font: 13px/1.7 ui-monospace, Menlo, monospace;
+    white-space: pre; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th { color: var(--muted); font-weight: 600; }
+  .steps { padding-left: 20px; }
+  .steps li { margin: 8px 0; }
+  footer { margin-top: 56px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>sesame-agent-tools</h1>
+  <p class="tag">Give your Sesame agents a personal tool — host it yourself, teach it once.</p>
+
+  <p>Your Sesame agents (Maya, Miles, Charlie, Simone) can call a tool <em>you</em> host to answer
+  things only your own data knows. You control the endpoint and the key; nobody shares anyone
+  else's server. This page is the template — <strong>Use this template</strong> on GitHub, build
+  your tools, and point the
+  <a href="https://github.com/anupchavan/sesame-client-unofficial">Sesame macOS client</a> at your URL.</p>
+
+  <h2>How it works</h2>
+  <div class="flow">You ──ask──▶ Agent ──fetch(dir,key)──▶ your endpoint ──text──▶ Agent ──answer──▶ You
+                       (server-side, authorised by a rotating key)</div>
+  <p>While the custom tool is enabled, the app silently tells your agent — via the session's
+  location-context field, never shown in chat — that a tool lives at your URL, and hands it a
+  rotating access key. When you ask for something it can't answer, the agent fetches
+  <code>your-url?dir=&lt;path&gt;&amp;depth=&lt;1-3&gt;&amp;key=&lt;key&gt;</code> and reads the reply back to you. Sesame's
+  memory means you only have to explain the tool once.</p>
+
+  <h2>The rotating key</h2>
+  <pre><code>key = HMAC_SHA256(secret, floor(unixtime / 300))   // first 10 hex chars, new every 5 min</code></pre>
+  <p>Set the same <strong>shared secret</strong> in the app and in your endpoint. Your endpoint
+  accepts the current or previous window, so a leaked key dies within ~10 minutes. Ready-made
+  implementations: <code>lib/keys.js</code>, <code>lib/keys.py</code>.</p>
+
+  <h2>Pick a host</h2>
+  <table>
+    <tr><th>Host</th><th>Good for</th><th>Dynamic?</th></tr>
+    <tr><td>GitHub Pages</td><td>static context — a knowledge base, fixed data</td><td>No</td></tr>
+    <tr><td>Cloudflare Workers (free)</td><td>real tools, per-request logic + key check</td><td>Yes</td></tr>
+    <tr><td>Your own server</td><td>tools that touch your machine</td><td>Yes</td></tr>
+  </table>
+
+  <h2>Set it up</h2>
+  <ol class="steps">
+    <li><strong>Use this template</strong> → your own repo.</li>
+    <li>Static context? Enable GitHub Pages and edit <code>tool.txt</code>. Real tools? Deploy
+      <code>worker/worker.js</code> or run <code>server/tree_server.py</code>.</li>
+    <li>Choose a long random shared secret; set it in your endpoint.</li>
+    <li>In the app: <strong>Settings → Advanced</strong> → turn on <em>Custom tool endpoint</em>,
+      paste your URL and the same secret.</li>
+    <li>In a chat or call, tell the agent once what the tool does. It remembers.</li>
+  </ol>
+
+  <h2>Endpoint contract</h2>
+  <pre><code>GET  &lt;base&gt;/tool?dir=&lt;path&gt;&amp;depth=&lt;1-3&gt;&amp;key=&lt;key&gt;
+     → verify key (current or previous 5-min window), else 403
+     → return a plain-text directory tree (dir = folder under root; depth 1–3)</code></pre>
+
+  <footer>
+    MIT · companion to <a href="https://github.com/anupchavan/sesame-client-unofficial">anupchavan/sesame-client</a>
+  </footer>
+</div>
+</body>
+</html>
